@@ -1,13 +1,12 @@
-import {useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAudioContext } from './hooks/useAudioContext';
-import Card  from "./components/Card";
+import Card from "./components/Card";
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Select from './components/Select';
 
 //TODO:Pop up for first time on site/If token has expired 
 //Get token refresh working if uers has not logged in since 60 minutes ago
-//Selecter should reset the data/call api
 //Dark mode -- Need to look into how tailwind handles this
 //Possible preview api for songs that spotify doesn't preview in their api 
 //Overall Styling change
@@ -16,9 +15,17 @@ import Select from './components/Select';
 import './index.css';
 
 
+
 function App() {
 
-  const {setSongToPlay} = useAudioContext();
+  const { setSongToPlay } = useAudioContext();
+
+  const limitValues = ['5', '10', '15', '20', '25', '30', '35', '40', '45', '50'];
+  const timePeriodValues = [
+  {title: 'Past Month', value: "short_term"},
+  {title: 'Past 6 Months', value: "medium_term"},
+  {title: 'All Time', value: "long_term"}
+  ]
 
   const CLINET_ID = '03aeaded767a49b483a3fb235cc3a196'
   const REDIRECT_URI = 'http://localhost:3000';
@@ -27,31 +34,30 @@ function App() {
   const SCOPE = 'user-read-private user-read-email user-read-playback-state user-modify-playback-state user-read-recently-played user-top-read';
 
   const [token, setToken] = useState(null);
-  const [options, setOptions] = useState(null);
   const [trackData, setTrackData] = useState(null);
   const [artistsData, setArtistsData] = useState(null);
-  const [timePeriod, setTimePeriod] = useState("long_term");
+  const [timePeriod, setTimePeriod] = useState("medium_term");
+  const [limit, setLimit] = useState('25');
 
-  let urlTracks = `https://api.spotify.com/v1/me/top/tracks?limit=50&time_range=${timePeriod}`;
-  let urlArtists = `https://api.spotify.com/v1/me/top/artists?limit=50&time_range=${timePeriod}`;
+  let urlTracks = `https://api.spotify.com/v1/me/top/tracks?time_range=${timePeriod}&limit=${limit}`;
+  let urlArtists = `https://api.spotify.com/v1/me/top/artists?time_range=${timePeriod}&limit=${limit}`;
 
   useEffect(() => {
     const hash = window.location.hash;
     let token = window.localStorage.getItem('token');
 
-    if(!token && hash)
-    {
+    if (!token && hash) {
       token = hash.substring(1).split("&").find(elem => elem.startsWith("access_token")).split("=")[1]
       window.location.hash = ""
       window.localStorage.setItem('token', token);
+      window.localStorage.setItem('lastLogin', Date.now());
 
     }
 
     setToken(token);
   }, [])
 
-  function logout()
-  {
+  function logout() {
     setToken(null);
     setArtistsData(null);
     setTrackData(null);
@@ -59,95 +65,117 @@ function App() {
   }
 
   useEffect(() => {
-    if(token)
-    {
-      setOptions({
-        method: 'GET',
-        headers:
-        {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-    }
-  }, [token])
 
-  async function test() 
-  {
+    const lastLogin = window.localStorage.getItem('lastLogin');
+    let timeDifference = (new Date() - lastLogin) / 1000;
+    let token = window.localStorage.getItem('token')
+    console.log(timeDifference)
+
+    if (token && (timeDifference < 3600)) {
       try
       {
-        const tracksRes = await fetch(urlTracks, options);
-        const artistsRes = await fetch(urlArtists, options);
-        const data1 = await tracksRes.json();
-        const data2 = await artistsRes.json();
-        setTrackData(data1);
-        setArtistsData(data2);
-        console.log(data1);
-        console.log(data2);
-      }
-      catch(err)
-      {
-        console.error(err);
-      }
-  }
+        fetch(urlTracks,
+          {
+            headers:
+            {
+              Authorization: `Bearer ${token}`
+            }
+          })
+          .then(res => res.json())
+          .then(data => setTrackData(data))
+        fetch(urlArtists, {
+          headers:
+          {
+            Authorization: `Bearer ${token}`
+          }
+        })
+          .then(res => res.json())
+          .then(data => {
+            setArtistsData(data);
+          })
+        }
+        catch(err)
+        {
+          console.error(err.message)
+        }
+    }
+    else
+    {
+      console.log('i\'m here')
+    }
+  }, [urlTracks, urlArtists])
 
   return (
     <div>
       <div className='flex flex-col h-screen bg-gray-600'>
-        <Header/>
+        <Header />
         <main className='flex-1 overflow-y-auto'>
-        {!token && <a href={`${AUTH_ENDPOINT}?client_id=${CLINET_ID}&redirect_uri=${REDIRECT_URI}&scope=${SCOPE}&response_type=${RESPONSE_TYPE}`}
-        >Login Into Spotify</a>}
-        <button onClick={logout}>Logout</button>
-        <button onClick={() => setTimePeriod('long_term')}>Test me again</button>
-        {token &&  <button onClick={test}>Test me</button>}
-        <div className='grid grid-cols-1 md:grid-cols-2 justify-center m-0 p-4'>
-          <div className='col-span-full'>
-            <div className='shadow-xl rounded-md border border-gray-500 bg-gray-600 m-4 p-5'>
-              <div className='flex justify-center align-center md:flex-column'>
-                <h2 className='text-white text-2xl mx-2'>Time Range:</h2>
-                <Select/>
+          {!token && <a href={`${AUTH_ENDPOINT}?client_id=${CLINET_ID}&redirect_uri=${REDIRECT_URI}&scope=${SCOPE}&response_type=${RESPONSE_TYPE}`}
+          >Login Into Spotify</a>}
+          <button onClick={logout}>Logout</button>
+          <div className='grid grid-cols-1 md:grid-cols-2 justify-center m-0 p-4'>
+            <div className='col-span-full'>
+              <div className='shadow-xl rounded-md border border-gray-500 bg-gray-600 m-4 p-5'>
+                <div className='flex justify-center align-center flex-col gap-3'>
+                  <div className='flex flex-col'>
+                    <label> 
+                      <span className='text-white text-2xl mx-2 block'>Time Range:</span>
+                      <Select 
+                      values={timePeriodValues}
+                      changeURL={setTimePeriod} 
+                      />
+                    </label>
+                  </div>
+                  <div className='flex flex-col'>
+                    <label>
+                      <span className='text-white text-2xl mx-2 block'>Limit Amount:</span>
+                    <Select
+                    values={limitValues}
+                    changeURL={setLimit}
+                    />
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className='shadow-xl rounded-md border border-gray-200 border-gray-500 bg-gray-600 m-4 col-span-full md:col-span-1'>
+              <div className='py-2'>
+                <div className='flex justify-center items-center border-b border-gray-200 mx-6 my-3 pb-2'>
+                  <p className='text-2xl md:text-4xl text-white'>Top Tracks:</p>
+                </div>
+                <ul className="grid grid-cols-1 gap-3 justify-center items-center mx-3 pt-1">
+                  {trackData && trackData.items.map((item, i) => ((
+                    <Card
+                      key={i}
+                      index={i + 1}
+                      photo={item.album.images[1].url}
+                      title={item.name}
+                      type={'track'}
+                      preview={item.preview_url}
+                      setSongToPlay={setSongToPlay}>
+                    </Card>
+                  )))}
+                </ul>
+              </div>
+            </div>
+            <div className='shadow-xl rounded-md border border-gray-200 border-gray-500 bg-gray-600 m-4 col-span-full md:col-span-1'>
+              <div className='py-2'>
+                <div className='flex justify-center items-center border-b border-gray-200 mx-6 my-3 pb-2'>
+                  <p className='text-2xl md:text-4xl text-white'> Top Artists:</p>
+                </div>
+                <ul className='grid grid-cols-1 gap-3 justify-center items-center pt-1 mx-3'>
+                  {artistsData && artistsData.items.map((item, i) => ((
+                    <Card
+                      key={i}
+                      index={i + 1}
+                      photo={item.images[1].url}
+                      title={item.name}>
+                    </Card>
+                  )))}
+                </ul>
               </div>
             </div>
           </div>
-          <div className='shadow-xl rounded-md border border-gray-200 border-gray-500 bg-gray-600 m-4 col-span-full md:col-span-1'>
-            <div className='py-2'>
-              <div className='flex justify-center items-center border-b border-gray-200 mx-6 my-3 pb-2'>
-                <p className='text-2xl md:text-4xl text-white'>Top Tracks:</p>
-              </div>
-              <ul className="grid grid-cols-1 gap-3 justify-center items-center mx-3 pt-1">
-                {trackData && trackData.items.map((item, i) => ((
-                  <Card
-                  key={i}
-                  index={i + 1}
-                  photo={item.album.images[1].url}
-                  title={item.name}
-                  type={'track'}
-                  preview={item.preview_url}  
-                  setSongToPlay={setSongToPlay}>         
-                  </Card>
-                )))}
-              </ul>
-            </div>
-          </div>
-          <div className='shadow-xl rounded-md border border-gray-200 border-gray-500 bg-gray-600 m-4 col-span-full md:col-span-1'>
-            <div className='py-2'>
-              <div className='flex justify-center items-center border-b border-gray-200 mx-6 my-3 pb-2'>
-                <p className='text-2xl md:text-4xl text-white'> Top Artists:</p>
-              </div>
-              <ul className='grid grid-cols-1 gap-3 justify-center items-center pt-1 mx-3'>
-                {artistsData && artistsData.items.map((item, i) => ((
-                  <Card
-                  key={i}
-                  index={i + 1}
-                  photo={item.images[1].url}
-                  title={item.name}>
-                  </Card>
-                )))}
-              </ul>
-            </div>
-          </div>
-        </div>
         </main>
         <Footer />
       </div>
