@@ -7,7 +7,8 @@ module.exports = {
     extend: {
       colors:
       {
-        'spotify-green': '#1DB954'
+        'spotify-green': '#1DB954',
+        'modal-backdrop': '#0901017f'
       }
     },
   },

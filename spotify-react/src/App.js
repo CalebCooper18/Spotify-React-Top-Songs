@@ -6,13 +6,13 @@ import Footer from './components/Footer';
 import Select from './components/Select';
 
 //TODO:Pop up for first time on site/If token has expired 
-//Get token refresh working if uers has not logged in since 60 minutes ago
 //Dark mode -- Need to look into how tailwind handles this
 //Possible preview api for songs that spotify doesn't preview in their api 
 //Overall Styling change
 //Put client creds into a env file
 
 import './index.css';
+import Modal from './components/Modal';
 
 
 
@@ -27,13 +27,8 @@ function App() {
   {title: 'All Time', value: "long_term"}
   ]
 
-  const CLINET_ID = '03aeaded767a49b483a3fb235cc3a196'
-  const REDIRECT_URI = 'http://localhost:3000';
-  const AUTH_ENDPOINT = "https://accounts.spotify.com/authorize";
-  const RESPONSE_TYPE = 'token';
-  const SCOPE = 'user-read-private user-read-email user-read-playback-state user-modify-playback-state user-read-recently-played user-top-read';
-
   const [token, setToken] = useState(null);
+  const [lastLogin, setLastLogin] = useState(null);
   const [trackData, setTrackData] = useState(null);
   const [artistsData, setArtistsData] = useState(null);
   const [timePeriod, setTimePeriod] = useState("medium_term");
@@ -41,21 +36,6 @@ function App() {
 
   let urlTracks = `https://api.spotify.com/v1/me/top/tracks?time_range=${timePeriod}&limit=${limit}`;
   let urlArtists = `https://api.spotify.com/v1/me/top/artists?time_range=${timePeriod}&limit=${limit}`;
-
-  useEffect(() => {
-    const hash = window.location.hash;
-    let token = window.localStorage.getItem('token');
-
-    if (!token && hash) {
-      token = hash.substring(1).split("&").find(elem => elem.startsWith("access_token")).split("=")[1]
-      window.location.hash = ""
-      window.localStorage.setItem('token', token);
-      window.localStorage.setItem('lastLogin', Date.now());
-
-    }
-
-    setToken(token);
-  }, [])
 
   function logout() {
     setToken(null);
@@ -65,11 +45,37 @@ function App() {
   }
 
   useEffect(() => {
+    const hash = window.location.hash;
+    let token = window.localStorage.getItem('token');
+    let lastLogin = window.localStorage.getItem('lastLogin');
 
-    const lastLogin = window.localStorage.getItem('lastLogin');
+    if (!token && hash) {
+      token = hash.substring(1).split("&").find(elem => elem.startsWith("access_token")).split("=")[1]
+      window.location.hash = ""
+      window.localStorage.setItem('token', token);
+      window.localStorage.setItem('lastLogin', Date.now());
+
+    }
+      
+      setToken(token);
+      setLastLogin(lastLogin)
+  }, [])
+
+  useEffect(() => {
+      if(lastLogin === null)
+      {
+        return
+      }
+      if((new Date() - lastLogin) / 1000 >= 3600)
+      {
+        logout();
+      }
+  }, [urlTracks, urlArtists, lastLogin])
+
+  useEffect(() => {
+    
     let timeDifference = (new Date() - lastLogin) / 1000;
     let token = window.localStorage.getItem('token')
-    console.log(timeDifference)
 
     if (token && (timeDifference < 3600)) {
       try
@@ -99,20 +105,14 @@ function App() {
           console.error(err.message)
         }
     }
-    else
-    {
-      console.log('i\'m here')
-    }
-  }, [urlTracks, urlArtists])
+  }, [urlTracks, urlArtists, lastLogin])
 
   return (
     <div>
       <div className='flex flex-col h-screen bg-gray-600'>
         <Header />
         <main className='flex-1 overflow-y-auto'>
-          {!token && <a href={`${AUTH_ENDPOINT}?client_id=${CLINET_ID}&redirect_uri=${REDIRECT_URI}&scope=${SCOPE}&response_type=${RESPONSE_TYPE}`}
-          >Login Into Spotify</a>}
-          <button onClick={logout}>Logout</button>
+          {!token && <Modal/>}
           <div className='grid grid-cols-1 md:grid-cols-2 justify-center m-0 p-4'>
             <div className='col-span-full'>
               <div className='shadow-xl rounded-md border border-gray-500 bg-gray-600 m-4 p-5'>
@@ -121,6 +121,7 @@ function App() {
                     <label> 
                       <span className='text-white text-2xl mx-2 block'>Time Range:</span>
                       <Select 
+                      defaultValue={timePeriod}
                       values={timePeriodValues}
                       changeURL={setTimePeriod} 
                       />
@@ -130,6 +131,7 @@ function App() {
                     <label>
                       <span className='text-white text-2xl mx-2 block'>Limit Amount:</span>
                     <Select
+                    defaultValue={limit}
                     values={limitValues}
                     changeURL={setLimit}
                     />
