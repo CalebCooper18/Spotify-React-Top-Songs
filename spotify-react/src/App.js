@@ -140,9 +140,7 @@ function App() {
                   <p className='text-2xl md:text-4xl text-black dark:text-white'>Top Tracks:</p>
                 </div>
                 <ul className="grid grid-cols-1 gap-3 justify-center items-center mx-3 pt-1">
-                  {trackData && trackData.items.length === 0 ? 
-                  <h2 className='text-2xl dark:text-white'>You should learn to groove, because you currently have no songs listen to!</h2>
-                  :
+                  {trackData && 
                    trackData.items.map((item, i) => ((
                     <Card
                       key={i}
@@ -162,9 +160,7 @@ function App() {
                   <p className='text-2xl md:text-4xl text-black dark:text-white'> Top Artists:</p>
                 </div>
                 <ul className='grid grid-cols-1 gap-3 justify-center items-center pt-1 mx-3'>
-                  {artistsData && artistsData.items.length === 0 ?
-                  <h2 className='text-2xl dark:text-white'>You should probably listen to more artists as you have none!</h2>
-                  :
+                  {artistsData &&
                    artistsData.items.map((item, i) => ((
                     <Card
                       key={i}
