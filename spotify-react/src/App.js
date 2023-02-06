@@ -1,24 +1,16 @@
-import { useEffect, useState } from 'react';
-import { useAudioContext } from './hooks/useAudioContext';
+import { useEffect, useState} from 'react';
 import Card from "./components/Card";
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Select from './components/Select';
+import Modal from './components/Modal';
 
-//TODO:Pop up for first time on site/If token has expired 
-//Dark mode -- Need to look into how tailwind handles this
-//Possible preview api for songs that spotify doesn't preview in their api 
-//Overall Styling change
-//Put client creds into a env file
 
 import './index.css';
-import Modal from './components/Modal';
 
 
 
 function App() {
-
-  const { setSongToPlay } = useAudioContext();
 
   const limitValues = ['5', '10', '15', '20', '25', '30', '35', '40', '45', '50'];
   const timePeriodValues = [
@@ -54,30 +46,27 @@ function App() {
       window.location.hash = ""
       window.localStorage.setItem('token', token);
       window.localStorage.setItem('lastLogin', Date.now());
-
-    }
-      
+    } 
       setToken(token);
       setLastLogin(lastLogin)
+
   }, [])
 
-  useEffect(() => {
-      if(lastLogin === null)
-      {
-        return
-      }
-      if((new Date() - lastLogin) / 1000 >= 3600)
-      {
-        logout();
-      }
-  }, [urlTracks, urlArtists, lastLogin])
 
   useEffect(() => {
-    
-    let timeDifference = (new Date() - lastLogin) / 1000;
     let token = window.localStorage.getItem('token')
 
-    if (token && (timeDifference < 3600)) {
+    if(lastLogin === null)
+    {
+      return
+    }
+    if((new Date() - lastLogin) / 1000 >= 3600)
+    {
+      logout();
+      return
+    }
+
+    if (token) {
       try
       {
         fetch(urlTracks,
@@ -88,7 +77,10 @@ function App() {
             }
           })
           .then(res => res.json())
-          .then(data => setTrackData(data))
+          .then(data => {
+            console.log(data);
+            setTrackData(data) 
+          })
         fetch(urlArtists, {
           headers:
           {
@@ -98,6 +90,7 @@ function App() {
           .then(res => res.json())
           .then(data => {
             setArtistsData(data);
+            console.log(data);
           })
         }
         catch(err)
@@ -107,19 +100,20 @@ function App() {
     }
   }, [urlTracks, urlArtists, lastLogin])
 
+
   return (
     <div>
-      <div className='flex flex-col h-screen bg-gray-600'>
+      <div className='flex flex-col h-screen bg-gray-100 dark:bg-gray-600'>
         <Header />
         <main className='flex-1 overflow-y-auto'>
           {!token && <Modal/>}
           <div className='grid grid-cols-1 md:grid-cols-2 justify-center m-0 p-4'>
             <div className='col-span-full'>
-              <div className='shadow-xl rounded-md border border-gray-500 bg-gray-600 m-4 p-5'>
+              <div className='shadow-xl rounded-md border bg-gray-100 border-black dark:border-gray-500 dark:bg-gray-600 m-4 p-5'>
                 <div className='flex justify-center align-center flex-col gap-3'>
                   <div className='flex flex-col'>
                     <label> 
-                      <span className='text-white text-2xl mx-2 block'>Time Range:</span>
+                      <span className='text-black dark:text-white text-2xl mx-2 block'>Time Range:</span>
                       <Select 
                       defaultValue={timePeriod}
                       values={timePeriodValues}
@@ -129,7 +123,7 @@ function App() {
                   </div>
                   <div className='flex flex-col'>
                     <label>
-                      <span className='text-white text-2xl mx-2 block'>Limit Amount:</span>
+                      <span className='text-black dark:text-white text-2xl mx-2 block'>Limit Amount:</span>
                     <Select
                     defaultValue={limit}
                     values={limitValues}
@@ -140,33 +134,38 @@ function App() {
                 </div>
               </div>
             </div>
-            <div className='shadow-xl rounded-md border border-gray-200 border-gray-500 bg-gray-600 m-4 col-span-full md:col-span-1'>
+            <div className='shadow-xl rounded-md border bg-gray-100 border-gray-500 dark:border-gray-500 dark:bg-gray-600 m-4 col-span-full md:col-span-1'>
               <div className='py-2'>
-                <div className='flex justify-center items-center border-b border-gray-200 mx-6 my-3 pb-2'>
-                  <p className='text-2xl md:text-4xl text-white'>Top Tracks:</p>
+                <div className='flex justify-center items-center border-b border-black dark:border-gray-200 mx-6 my-3 pb-2'>
+                  <p className='text-2xl md:text-4xl text-black dark:text-white'>Top Tracks:</p>
                 </div>
                 <ul className="grid grid-cols-1 gap-3 justify-center items-center mx-3 pt-1">
-                  {trackData && trackData.items.map((item, i) => ((
+                  {trackData && trackData.items.length === 0 ? 
+                  <h2 className='text-2xl dark:text-white'>You should learn to groove, because you currently have no songs listen to!</h2>
+                  :
+                   trackData.items.map((item, i) => ((
                     <Card
                       key={i}
                       index={i + 1}
                       photo={item.album.images[1].url}
                       title={item.name}
                       type={'track'}
-                      preview={item.preview_url}
-                      setSongToPlay={setSongToPlay}>
+                      preview={item.preview_url}>
                     </Card>
                   )))}
                 </ul>
               </div>
             </div>
-            <div className='shadow-xl rounded-md border border-gray-200 border-gray-500 bg-gray-600 m-4 col-span-full md:col-span-1'>
+            <div className='shadow-xl rounded-md border bg-gray-100 border-gray-500 dark:border-gray-500 dark:bg-gray-600 m-4 col-span-full md:col-span-1'>
               <div className='py-2'>
-                <div className='flex justify-center items-center border-b border-gray-200 mx-6 my-3 pb-2'>
-                  <p className='text-2xl md:text-4xl text-white'> Top Artists:</p>
+                <div className='flex justify-center items-center border-b border-black dark:border-gray-200 mx-6 my-3 pb-2'>
+                  <p className='text-2xl md:text-4xl text-black dark:text-white'> Top Artists:</p>
                 </div>
                 <ul className='grid grid-cols-1 gap-3 justify-center items-center pt-1 mx-3'>
-                  {artistsData && artistsData.items.map((item, i) => ((
+                  {artistsData && artistsData.items.length === 0 ?
+                  <h2 className='text-2xl dark:text-white'>You should probably listen to more artists as you have none!</h2>
+                  :
+                   artistsData.items.map((item, i) => ((
                     <Card
                       key={i}
                       index={i + 1}
