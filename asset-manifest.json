@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/Spotify-React-Top-Songs/static/css/main.6331e0ca.css",
-    "main.js": "/Spotify-React-Top-Songs/static/js/main.dc1c2e71.js",
+    "main.js": "/Spotify-React-Top-Songs/static/js/main.4f3b8eb6.js",
     "index.html": "/Spotify-React-Top-Songs/index.html",
     "main.6331e0ca.css.map": "/Spotify-React-Top-Songs/static/css/main.6331e0ca.css.map",
-    "main.dc1c2e71.js.map": "/Spotify-React-Top-Songs/static/js/main.dc1c2e71.js.map"
+    "main.4f3b8eb6.js.map": "/Spotify-React-Top-Songs/static/js/main.4f3b8eb6.js.map"
   },
   "entrypoints": [
     "static/css/main.6331e0ca.css",
-    "static/js/main.dc1c2e71.js"
+    "static/js/main.4f3b8eb6.js"
   ]
 }
