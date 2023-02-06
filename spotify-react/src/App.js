@@ -140,7 +140,6 @@ function App() {
                   <p className='text-2xl md:text-4xl text-black dark:text-white'>Top Tracks:</p>
                 </div>
                 <ul className="grid grid-cols-1 gap-3 justify-center items-center mx-3 pt-1">
-                  <h2>testing</h2>
                   {trackData && 
                    trackData.items.map((item, i) => ((
                     <Card
